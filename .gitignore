@@ -58,3 +58,6 @@ pytest_cache/
 # Ignore package locks (optional, if you use only yarn or npm, not both)
 # package-lock.json
 yarn.lock 
+
+localhost+2-key.pem/
+localhost+2.pem/

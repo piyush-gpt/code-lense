@@ -4,6 +4,7 @@ import axios from "axios";
 import { findPRAnalysis, savePRAnalysis } from "../database/functions/prAnalysis.ts";
 import { RepoStats } from "../models/RepoStats.ts";
 import { PRAnalysis } from "../models/PRAnalysis.ts";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -128,13 +129,16 @@ router.get('/get-pr-agent', requireAuth, async (req, res) => {
       });
 
       // 5. Save the analysis result
+      const contentToHash = JSON.stringify({ prTitle: pr.data.title, prBody: pr.data.body, changedFiles });
+      const contentHash = crypto.createHash("sha256").update(contentToHash).digest("hex");
       await savePRAnalysis({
         accountId,
         owner: ownerStr,
         repo: repoStr,
         prNumber,
         prTitle: pr.data.title,
-        analysis: response.data
+        analysis: response.data,
+        contentHash
       });
 
       console.log(`✅ Analysis saved for PR #${prNumber} in ${ownerStr}/${repoStr}`);

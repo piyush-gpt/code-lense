@@ -15,6 +15,7 @@ import webhookMiddleware from "./webhooks/webhooks.ts";
 import bodyParser from "body-parser";
 import { connectDB } from "./database/database.ts";
 import { config } from "./config/config.ts";
+import issueagentRoutes from "./routes/issueagent.ts";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/protected", protectedRoutes);
 app.use("/api/pragent", pragentRoutes);
 app.use("/api/codequery", codequeryRoutes);
+app.use("/api/issueagent", issueagentRoutes);
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
