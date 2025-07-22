@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+.venv/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+*.log
+
+# Jupyter
+.ipynb_checkpoints
+
+# Node.js
+node_modules/
+.npm/
+.next/
+.next/cache/
+dist/
+build/
+coverage/
+*.log
+
+# OS/Editor/System
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace
+*.env
+.env.*
+.envrc
+*.local
+*.bak
+
+# Misc
+*.sqlite3
+*.db
+*.tgz
+*.tar.gz
+*.zip
+*.pem
+*.crt
+*.key
+
+# Ignore test output
+htmlcov/
+pytest_cache/
+
+# Ignore package locks (optional, if you use only yarn or npm, not both)
+# package-lock.json
+yarn.lock 
