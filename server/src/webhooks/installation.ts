@@ -6,7 +6,6 @@ import { deleteAllIssueAnalysesForAccount } from "../database/functions/issueAna
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { config } from '../config/config.ts';
-import { RepoStats } from "../models/RepoStats.ts";
 import RepoFileList from '../models/RepoFileList.ts';
 
 async function getInstallationOctokit(installationId: number) {
@@ -215,8 +214,6 @@ export function setupInstallationWebhooks(webhooks: Webhooks) {
       console.log(`🗑️ Deleted ${deletedIssueAnalyses.deletedCount} issue analyses for account ${accountLogin}`);
       
       // Delete all RepoStats for this account
-      const deletedRepoStats = await RepoStats.deleteMany({ accountId });
-      console.log(`🗑️ Deleted ${deletedRepoStats.deletedCount} repo stats for account ${accountLogin}`);
       
       // Delete all RepoFileList entries for this account
       const deletedRepoFileLists = await RepoFileList.deleteMany({ accountId });

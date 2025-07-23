@@ -17,12 +17,12 @@ class IssueInput(BaseModel):
 
 class IssueAnalysis(BaseModel):
     summary: str = Field(description="A concise summary of the issue")
-    type: str = Field(description="The type of issue: bug, feature, enhancement, or question")
+    type: str = Field(description="The type of issue: bug, feature, enhancement, question, or danger")
     priority: str = Field(description="Priority level: high, medium, or low")
     suggested_actions: str = Field(description="Specific actions to take to address this issue")
     related_areas: str = Field(description="Areas of the codebase that might be affected")
     estimated_effort: str = Field(description="Estimated time/effort to resolve this issue")
-    labels: str = Field(description="Comma-separated list of relevant labels (bug, feature, enhancement, question)")
+    labels: str = Field(description="Comma-separated list of relevant labels (bug, feature, enhancement, question, danger)")
 
 # --- AGENT STATE ---
 class IssueAnalysisState(TypedDict):
@@ -44,7 +44,7 @@ Issue Description: {state['issue_body']}
 
 Please analyze this issue and provide:
 1. A clear summary of what the issue is about
-2. Determine the type: bug (something broken), feature (new functionality), enhancement (improvement), or question (seeking information)
+2. Determine the type: bug (if the issue is about a bug in the repository code), feature (if issue is about adding a new functionality), enhancement (improvement), question (if issue is asking or seeking information), or danger (if the issue is asking to do something that may break the code, affect privacy, or harm the repo)
 3. Assess priority: high (critical/urgent), medium (important), or low (nice to have)
 4. Suggest specific actions to address the issue
 5. Identify related areas of the codebase that might be affected
@@ -53,8 +53,8 @@ Please analyze this issue and provide:
 
 Focus on being practical and actionable.
 
-For the labels field, provide a comma-separated list of relevant labels from: bug, feature, enhancement, question.
-For the type field, choose exactly one from: bug, feature, enhancement, question.
+For the labels field, provide a comma-separated list of relevant labels from: bug, feature, enhancement, question, danger.
+For the type field, choose exactly one from: bug, feature, enhancement, question, danger.
 For the priority field, choose exactly one from: high, medium, low."""
 
     try:

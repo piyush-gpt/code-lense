@@ -2,7 +2,6 @@ import express from "express";
 import { requireAuth } from "../middleware/auth.ts";
 import axios from "axios";
 import { findPRAnalysis, savePRAnalysis } from "../database/functions/prAnalysis.ts";
-import { RepoStats } from "../models/RepoStats.ts";
 import { PRAnalysis } from "../models/PRAnalysis.ts";
 import crypto from "crypto";
 
@@ -149,28 +148,6 @@ router.get('/get-pr-agent', requireAuth, async (req, res) => {
       return res.status(500).json({ error: "PR analysis failed" });
     }
   });
-
-// Get average PR cycle time for a specific repo
-router.get('/average-pr-cycle-time', requireAuth, async (req, res) => {
-  try {
-    //@ts-ignore
-    const user = req.user!;
-    const accountId = user.account_id;
-    const { repo } = req.query;
-    if (!accountId || !repo) {
-      return res.status(400).json({ error: "Missing account ID or repo" });
-    }
-    const stats = await RepoStats.findOne({ accountId, repo });
-    if (!stats || !stats.prCycleTimeCount) {
-      return res.json({ success: true, averageCycleTimeMs: null });
-    }
-    const avgMs = stats.prCycleTimeTotalMs / stats.prCycleTimeCount;
-    return res.json({ success: true, averageCycleTimeMs: avgMs });
-  } catch (error) {
-    console.error("❌ Failed to fetch PR cycle time:", error);
-    return res.status(500).json({ error: "Failed to fetch PR cycle time" });
-  }
-});
 
 
 router.get('/ci-test-results', requireAuth, async (req, res) => {

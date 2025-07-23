@@ -1,49 +1,61 @@
-'use client';
+import { cookies } from 'next/headers';
+import HomeActions from './HomeActions';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/store';
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('devdash_session')?.value;
+  let isAuthenticated = false;
+  let user: any = null;
 
-export default function HomePage() {
-  const router = useRouter();
-  const { user, loading, isAuthenticated, checkAuth } = useAuthStore();
-
-  useEffect( ()  => {
-    async function performAuthCheck() {
-      console.log('Checking auth');
-      await checkAuth();
-      console.log('Auth checked');
+  async function fetchUserWithRefresh() {
+    console.log('Fetching user with refresh');
+    console.log('Token:', token);
+    // Try to fetch user info
+    try{
+    const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/me`, {
+      headers: { Cookie: `devdash_session=${token}` },
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    const userData = await userRes.json();
+    console.log('User data:', userData);
+    if (userRes.ok && userData.success) {
+      return userData.user;
     }
-    performAuthCheck();
-  }, []);
-
-  const handleLogin = () => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    } else {
-      const appSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG!;
-      window.location.href = `https://github.com/apps/${appSlug}/installations/new`;
+    // If unauthorized, try to refresh
+    if (userRes.status === 401 || userRes.status === 403) {
+      console.log('Refreshing token');
+      const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/refresh-token`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Cookie: `devdash_session=${token}` },
+      });
+      const refreshData = await refreshRes.json();
+      if (refreshRes.ok && refreshData.success) {
+        console.log('Token refreshed');
+        // Try again to fetch user info
+        const userRes2 = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/me`, {
+          headers: { Cookie: `devdash_session=${token}` },
+          cache: 'no-store',
+          credentials: 'include',
+        });
+        const userData2 = await userRes2.json();
+        if (userRes2.ok && userData2.success) {
+          return userData2.user;
+        }
+      }
+    } }
+    catch (error) {
+      console.error('Error fetching user:', error);
     }
-  };
+    return null;
+  }
 
-  const handleDashboard = () => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    } else {
-      const appSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG!;
-      window.location.href = `https://github.com/apps/${appSlug}/installations/new`;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  if (token) {
+    try {
+      user = await fetchUserWithRefresh();
+      if (user) isAuthenticated = true;
+    } catch {}
   }
 
   return (
@@ -60,9 +72,9 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {isAuthenticated && (
+              {isAuthenticated && user && (
                 <span className="text-sm text-gray-600">
-                  Welcome, {user?.account_login}!
+                  Welcome, {user.account_login}!
                 </span>
               )}
             </div>
@@ -87,25 +99,7 @@ export default function HomePage() {
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={handleLogin}
-                className={`px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 ${
-                  isAuthenticated
-                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                }`}
-              >
-                {isAuthenticated ? '🚀 Go to Dashboard' : '🔐 Install GitHub App'}
-              </button>
-              
-              <button
-                onClick={handleDashboard}
-                className="px-8 py-4 rounded-lg font-semibold text-lg bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                📊 View Dashboard
-              </button>
-            </div>
+            <HomeActions isAuthenticated={isAuthenticated} user={user} />
 
             {/* Status Indicator */}
             <div className="mt-8">

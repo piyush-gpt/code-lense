@@ -1,17 +1,12 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/store';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { 
   GitBranch, 
   GitPullRequest, 
   GitCommit, 
   Star, 
-  Eye, 
   Calendar,
-  TrendingUp,
-  Users,
   Activity,
   ExternalLink
 } from 'lucide-react';
@@ -31,43 +26,59 @@ interface RepoStats {
   contributors_count: number;
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuthStore();
-  const [repoStats, setRepoStats] = useState<RepoStats[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('devdash_session')?.value;
+  let isAuthenticated = false;
+  let user: any = null;
 
-  useEffect(() => {
-    if (!isAuthenticated && !loading) {
-      router.push('/');
-      return;
-    }
-
-    if (isAuthenticated) {
-      fetchRepoStats();
-    }
-  }, [isAuthenticated, loading, router]);
-
-  const fetchRepoStats = async () => {
+  if (token) {
     try {
-      setLoadingStats(true);
-      const response = await fetch('https://localhost:4000/api/protected/repo-stats', {
+      const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/me`, {
+        headers: { Cookie: `devdash_session=${token}` },
+        cache: 'no-store',
         credentials: 'include',
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch repo stats');
+      const userData = await userRes.json();
+      if (userRes.ok && userData.success) {
+        isAuthenticated = true;
+        user = userData.user;
       }
+    } catch {}
+  }
 
-      const data = await response.json();
-      setRepoStats(data.data);
+  if (!isAuthenticated) {
+    redirect('/');
+  }
+
+  // Fetch user and repo stats from backend
+  let repoStats: RepoStats[] = [];
+  let error: string | null = null;
+  try {
+    // Fetch user info
+    const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/me`, {
+      headers: { Cookie: `devdash_session=${token}` },
+      cache: 'no-store',
+      credentials: 'include',
+      next: { tags: ['user'] },
+    });
+    const userData = await userRes.json();
+    if (!userRes.ok || !userData.success) throw new Error(userData.error || 'Failed to fetch user');
+    user = userData.user;
+
+    // Fetch repo stats
+    const repoRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/protected/repo-stats`, {
+      headers: { Cookie: `devdash_session=${token}` },
+      cache: 'no-store',
+      credentials: 'include',
+      next: { tags: ['repo-stats'] },
+    });
+    const repoData = await repoRes.json();
+    if (!repoRes.ok) throw new Error(repoData.error || 'Failed to fetch repo stats');
+    repoStats = repoData.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch stats');
-    } finally {
-      setLoadingStats(false);
+    error = err instanceof Error ? err.message : 'Failed to load dashboard';
     }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -93,21 +104,6 @@ export default function DashboardPage() {
     return colors[language] || 'bg-gray-400';
   };
 
-  if (loading || loadingStats) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
@@ -125,12 +121,12 @@ export default function DashboardPage() {
               <span className="text-sm text-gray-600">
                 Welcome, {user?.account_login}!
               </span>
-              <button
-                onClick={() => router.push('/')}
+              <Link
+                href="/"
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Home
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -227,10 +223,10 @@ export default function DashboardPage() {
         {/* Repositories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {repoStats.map((repo) => (
-            <div
+            <Link
               key={repo.full_name}
-              onClick={() => router.push(`/dashboard/repo/${repo.owner}/${repo.name}`)}
-              className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 cursor-pointer group hover:scale-105"
+              href={`/dashboard/repo/${repo.owner}/${repo.name}`}
+              className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 cursor-pointer group hover:scale-105 block"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -300,12 +296,12 @@ export default function DashboardPage() {
                   Updated {formatDate(repo.updated_at)}
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
         {/* Empty State */}
-        {!loadingStats && repoStats.length === 0 && !error && (
+        {repoStats.length === 0 && !error && (
           <div className="text-center py-12">
             <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
               <GitBranch className="h-12 w-12" />

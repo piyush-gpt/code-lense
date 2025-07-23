@@ -6,7 +6,6 @@ import { createAppAuth } from "@octokit/auth-app";
 import { config } from '../config/config.ts';
 import axios from "axios";
 import crypto from "crypto";
-import { RepoStats } from "../models/RepoStats.ts";
 
 async function getInstallationOctokit(installationId: number) {
   const octokit = new Octokit({
@@ -404,22 +403,7 @@ export function setupPullRequestWebhooks(webhooks: Webhooks) {
       }
 
       // If PR is merged, update PR cycle time stats in RepoStats
-      if (pr.merged_at) {
-        const createdAt = new Date(pr.created_at);
-        const mergedAt = new Date(pr.merged_at);
-        const cycleTimeMs = mergedAt.getTime() - createdAt.getTime();
-        await RepoStats.findOneAndUpdate(
-          { accountId, repo: repoName },
-          {
-            $inc: {
-              prCycleTimeTotalMs: cycleTimeMs,
-              prCycleTimeCount: 1
-            }
-          },
-          { upsert: true }
-        );
-        console.log(`📈 Updated PR cycle time stats for account ${accountId}, repo ${repoName}: +${cycleTimeMs}ms`);
-      }
+      // (Removed: no longer tracking PR cycle time)
 
       // Delete the PR analysis
       await deletePRAnalysis(accountId, owner, repoName, pr.number);

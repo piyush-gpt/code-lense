@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000'}/api/user/logout`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -65,7 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       console.log('🔍 Checking auth...');
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000'}/api/user/me`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/me`;
       console.log('🌐 API URL:', apiUrl);
       
       const response = await fetch(apiUrl, {
@@ -84,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           // Try to refresh the token using installation ID
           try {
-            const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000'}/api/user/refresh-token`, {
+            const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:4000'}/api/user/refresh-token`, {
               method: 'POST',
               credentials: 'include',
             });

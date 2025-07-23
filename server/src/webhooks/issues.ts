@@ -174,7 +174,8 @@ async function analyzeAndSaveIssue(
         "bug",
         "feature", 
         "enhancement",
-        "question"
+        "question",
+        "danger"
       ];
 
       // Parse new labels from AI agent (comma-separated string)
@@ -227,7 +228,8 @@ async function analyzeAndSaveIssue(
             "bug": "d73a4a",
             "feature": "a2eeef", 
             "enhancement": "a2eeef",
-            "question": "d876e3"
+            "question": "d876e3",
+            "danger": "b60205"
           };
           try {
             await octokit.issues.createLabel({
