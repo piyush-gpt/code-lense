@@ -18,7 +18,6 @@ export const config = {
   // JWT Configuration
   JWT_SECRET: process.env.JWT_SECRET!,
   
-  // Database Configuration
   MONGODB_URI: process.env.MONGODB_URI!,
   
   // Frontend URLs
