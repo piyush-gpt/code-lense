@@ -1,0 +1,33 @@
+name: CI Test for Webhook
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests (with a flaky test example)
+        run: |
+          echo "Running tests..."
+          # Simulate a flaky test: fails randomly
+          if [ $((RANDOM % 2)) -eq 0 ]; then
+            echo "❌ Flaky test failed!"
+            exit 1
+          else
+            echo "✅ Flaky test passed!"
+          fi

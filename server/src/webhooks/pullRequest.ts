@@ -149,8 +149,7 @@ async function analyzeAndSavePR(
       per_page: 100,
     });
 
-    const issues = issuesResp.data.map((i: any) => `${i.title} ${i.body || ""}`);
-
+    const issues = issuesResp.data.map((i: any) => `${i.number}: ${i.title} ${i.body || ""}`);
     // Send to Python FastAPI PR Agent for analysis
     const analysisResponse = await axios.post("http://localhost:8000/analyze-pr", {
       pr_title: prTitle,
