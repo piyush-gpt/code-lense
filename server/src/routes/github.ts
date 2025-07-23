@@ -13,7 +13,6 @@ router.get("/github/callback", async (req, res) => {
     const existingInstallation = await findInstallationByIdOrAccountId(Number(installationId));
     
     if (existingInstallation) {
-      // Installation exists with full data - create token immediately
       const token = createSessionToken({
         account_login: existingInstallation.accountLogin,
         installation_id: existingInstallation.installationId,
