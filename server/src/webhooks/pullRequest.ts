@@ -1,6 +1,6 @@
 // pullRequest.ts - Pull Request webhook handlers
 import { Webhooks } from "@octokit/webhooks";
-import { savePRAnalysis, deletePRAnalysis, updatePRAnalysisCommentId, findPRAnalysis, updatePRAnalysisCICommentId } from "../database/functions/prAnalysis.ts";
+import { savePRAnalysis, deletePRAnalysis, updatePRAnalysisCommentId, findPRAnalysis, updatePRAnalysisCICommentId, updatePRAnalysisRefactorCommentId, updatePRAnalysisRefactorSuggestions } from "../database/functions/prAnalysis.ts";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { config } from '../config/config.ts';
@@ -92,6 +92,58 @@ _This comment was generated automatically by DevDashAI PR Agent_ 🚀`;
   }
 }
 
+async function postOrUpdateRefactorComment(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  refactorBody: string,
+  existingCommentId?: number
+) {
+  try {
+    if (existingCommentId) {
+      // Try to update existing comment
+      try {
+        await octokit.issues.updateComment({
+          owner,
+          repo,
+          comment_id: existingCommentId,
+          body: refactorBody
+        });
+        console.log(`✅ Updated existing refactor comment ${existingCommentId} for PR #${prNumber}`);
+      } catch (updateError: any) {
+        // If comment doesn't exist (404), create a new one
+        if (updateError.status === 404) {
+          console.log(`⚠️ Refactor comment ${existingCommentId} not found, creating new comment`);
+          const response = await octokit.issues.createComment({
+            owner,
+            repo,
+            issue_number: prNumber,
+            body: refactorBody
+          });
+          console.log(`✅ Created new refactor comment ${response.data.id} for PR #${prNumber}`);
+          return response.data.id;
+        } else {
+          throw updateError;
+        }
+      }
+    } else {
+      // Create new comment
+      const response = await octokit.issues.createComment({
+        owner,
+        repo,
+        issue_number: prNumber,
+        body: refactorBody
+      });
+      console.log(`✅ Created new refactor comment ${response.data.id} for PR #${prNumber}`);
+      return response.data.id;
+    }
+  } catch (error) {
+    console.error("❌ Failed to post/update refactor comment:", error);
+    throw error;
+  }
+}
+
 async function analyzeAndSavePR(
   installationId: number,
   accountId: number,
@@ -141,13 +193,22 @@ async function analyzeAndSavePR(
       return;
     }
 
-    const analysisResponse = await axios.post("http://localhost:8000/analyze-pr", {
-      pr_title: prTitle,
-      pr_body: prBody,
-      changed_files: changedFiles,
-    });
+    // Run both PR analysis and refactor analysis in parallel
+    const [analysisResponse, refactorResponse] = await Promise.all([
+      axios.post("http://localhost:8000/analyze-pr", {
+        pr_title: prTitle,
+        pr_body: prBody,
+        changed_files: changedFiles,
+      }),
+      axios.post("http://localhost:8000/analyze-refactor", {
+        pr_title: prTitle,
+        pr_body: prBody,
+        changed_files: changedFiles,
+      })
+    ]);
 
     const analysis = analysisResponse.data;
+    const refactorAnalysis = refactorResponse.data;
 
     // Save the analysis result using installationId as accountId
     const savedAnalysis = await savePRAnalysis({
@@ -173,6 +234,37 @@ async function analyzeAndSavePR(
     // Update the comment ID in the database if it's a new comment
     if (commentId && !savedAnalysis.commentId) {
       await updatePRAnalysisCommentId(accountId, owner, repoName, prNumber, commentId);
+    }
+
+    // Post refactor suggestions comment if there are any
+    if (refactorAnalysis.refactor_suggestions && refactorAnalysis.refactor_suggestions.length > 0) {
+      let refactorBody = `### 🔧 Refactoring Suggestions\n\n`;
+      
+      for (const suggestion of refactorAnalysis.refactor_suggestions) {
+        refactorBody += `**File:** \`${suggestion.file_path}\`\n`;
+        refactorBody += `**Suggestion:** ${suggestion.suggestion}\n`;
+        if (suggestion.updated_code) {
+          refactorBody += `**Updated Code:**\n\`\`\`\n${suggestion.updated_code}\n\`\`\`\n`;
+        }
+        refactorBody += `\n---\n\n`;
+      }
+
+      const refactorCommentId = await postOrUpdateRefactorComment(
+        octokit,
+        owner,
+        repoName,
+        prNumber,
+        refactorBody,
+        savedAnalysis.refactorCommentId
+      );
+
+      // Update the refactor comment ID in the database if it's a new comment
+      if (refactorCommentId && !savedAnalysis.refactorCommentId) {
+        await updatePRAnalysisRefactorCommentId(accountId, owner, repoName, prNumber, refactorCommentId);
+      }
+
+      // Save refactor suggestions to database
+      await updatePRAnalysisRefactorSuggestions(accountId, owner, repoName, prNumber, refactorAnalysis.refactor_suggestions);
     }
 
     // === LABEL SYNC LOGIC ===

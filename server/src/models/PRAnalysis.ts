@@ -30,7 +30,21 @@ const prAnalysisSchema = new mongoose.Schema({
     checklist: String,
     affected_modules: String,
   },
+  refactorSuggestions: {
+    type: Map,
+    of: new mongoose.Schema({
+      file_path: String,
+      suggestion: String,
+      updated_code: String,
+      updatedAt: Date
+    }, { _id: false }),
+    default: {}
+  },
   commentId: {
+    type: Number,
+    default: null
+  },
+  refactorCommentId: {
     type: Number,
     default: null
   },

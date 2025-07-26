@@ -128,6 +128,78 @@ export const updatePRAnalysisCICommentId = async (
   }
 };
 
+// Update refactor comment ID for a PR analysis
+export const updatePRAnalysisRefactorCommentId = async (
+  accountId: number,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  refactorCommentId: number
+) => {
+  try {
+    const analysis = await PRAnalysis.findOneAndUpdate(
+      {
+        accountId,
+        owner,
+        repo,
+        prNumber
+      },
+      {
+        refactorCommentId,
+        updatedAt: new Date()
+      },
+      {
+        new: true
+      }
+    );
+    return analysis;
+  } catch (error) {
+    console.error('Error updating PR analysis refactor comment ID:', error);
+    throw error;
+  }
+};
+
+// Update refactor suggestions for a PR analysis
+export const updatePRAnalysisRefactorSuggestions = async (
+  accountId: number,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  refactorSuggestions: any[]
+) => {
+  try {
+    const refactorSuggestionsMap = new Map();
+    for (const suggestion of refactorSuggestions) {
+      refactorSuggestionsMap.set(suggestion.file_path, {
+        file_path: suggestion.file_path,
+        suggestion: suggestion.suggestion,
+        updated_code: suggestion.updated_code || "",
+        updatedAt: new Date()
+      });
+    }
+
+    const analysis = await PRAnalysis.findOneAndUpdate(
+      {
+        accountId,
+        owner,
+        repo,
+        prNumber
+      },
+      {
+        refactorSuggestions: refactorSuggestionsMap,
+        updatedAt: new Date()
+      },
+      {
+        new: true
+      }
+    );
+    return analysis;
+  } catch (error) {
+    console.error('Error updating PR analysis refactor suggestions:', error);
+    throw error;
+  }
+};
+
 // Delete PR analysis
 export const deletePRAnalysis = async (
   accountId: number,
