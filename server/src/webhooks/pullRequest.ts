@@ -18,6 +18,8 @@ async function getInstallationOctokit(installationId: number) {
   });
   return octokit;
 }
+console.log(config.GITHUB_APP_ID);
+console.log(config.GITHUB_PRIVATE_KEY);
 
 async function postOrUpdateComment(
   octokit: Octokit,
