@@ -78,6 +78,15 @@ async def analyze_pr(pr: PRInput):
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/analyze-refactor")
+async def analyze_refactor(pr: RefactorInput):
+    try:
+        result = refactor_graph.invoke(pr)
+        return RefactorAnalysis(**result)
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/classify-ci-log")
 async def classify_ci_log(log: CILogInput):
     try:
