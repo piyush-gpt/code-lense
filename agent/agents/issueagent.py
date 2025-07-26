@@ -5,12 +5,14 @@ from pydantic import BaseModel, Field
 from typing import TypedDict, Any, Optional, List
 from dotenv import load_dotenv
 
-load_dotenv()
+    
 
-# --- LANGCHAIN SETUP ---
+
+   load_dotenv()
+
+
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
 
-# --- PYDANTIC MODELS ---
 class IssueInput(BaseModel):
     issue_title: str
     issue_body: str
