@@ -9,14 +9,9 @@ const router = express.Router();
 // Get all open issues for a repository
 router.get('/get-repo-issues', requireAuth, async (req, res) => {
   try {
-    //@ts-ignore
     const user = req.user!;
     const octokit = user.octokit;
     const { owner, repo } = req.query;
-
-    if (!repo || !owner || !octokit) {
-      return res.status(400).json({ error: "Missing required parameters or auth" });
-    }
 
     // Get all open issues for the repository (excluding PRs)
     const issuesResp = await octokit.issues.listForRepo({
