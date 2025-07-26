@@ -29,7 +29,6 @@ const prAnalysisSchema = new mongoose.Schema({
     suggested_tests: String,
     checklist: String,
     affected_modules: String,
-    matched_issues: String
   },
   commentId: {
     type: Number,
@@ -38,19 +37,13 @@ const prAnalysisSchema = new mongoose.Schema({
   cicommentId: {
     type: Number,
     default: null
-  },
-  rerunCount: {
-    type: Number,
-    default: 0
-  },
+  },      
   ciTestResults: {
     type: Map,
     of: new mongoose.Schema({
-      status: String, // 'success' | 'failure' | 'flaky'
-      explanation: String,
+      comment: String,
       updatedAt: Date,
-      workflow: String,
-      jobName: String
+      workflow: String
     }, { _id: false }),
     default: {}
   },

@@ -8,12 +8,11 @@ from typing import Any, TypedDict
 
 dotenv.load_dotenv()
 
-FLAKY_CLASSIFIER_PROMPT = """You are an expert CI test log analyst. Given a CI job log, determine if the failure is likely due to a flaky test (i.e., intermittent, non-deterministic, or infrastructure-related) or a real, consistent bug. 
+EXPLANATION_PROMPT = """You are an expert CI test log analyst. Given a CI job log, provide a concise 1-2 sentence explanation of why the job failed. Do not classify as flaky or not, just explain the failure.
 
 Output format (JSON):
 {
-  "is_flaky": true or false,
-  "explanation": "1-2 sentences explaining your reasoning"
+  "explanation": "1-2 sentences explaining the failure"
 }
 """
 
@@ -23,12 +22,11 @@ class CILogInput(TypedDict):
     log_text: str
 
 class CILogAnalysis(BaseModel):
-    is_flaky: bool
     explanation: str
 
-def classify_flaky_node(state: CILogInput) -> dict[str, Any]:
+def explain_failure_node(state: CILogInput) -> dict[str, Any]:
     prompt = ChatPromptTemplate.from_messages([
-        ("system", FLAKY_CLASSIFIER_PROMPT),
+        ("system", EXPLANATION_PROMPT),
         ("user", "{input}")
     ])
     structured_llm = llm.with_structured_output(CILogAnalysis)
@@ -40,7 +38,7 @@ def classify_flaky_node(state: CILogInput) -> dict[str, Any]:
 
 def build_citest_agent_graph():
     builder = StateGraph(CILogInput)
-    builder.add_node("classify_flaky", classify_flaky_node)
-    builder.set_entry_point("classify_flaky")
-    builder.add_edge("classify_flaky", END)
+    builder.add_node("explain_failure", explain_failure_node)
+    builder.set_entry_point("explain_failure")
+    builder.add_edge("explain_failure", END)
     return builder.compile() 

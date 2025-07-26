@@ -72,7 +72,6 @@ async def analyze_pr(pr: PRInput):
             pr_title=pr.pr_title,
             pr_body=pr.pr_body,
             changed_files=pr.changed_files,
-            issues=pr.issues
         )
         result = graph.invoke(state)
         return result

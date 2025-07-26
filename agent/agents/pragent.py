@@ -5,7 +5,6 @@ from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel
 import dotenv
 from typing import List
-import re
 
 dotenv.load_dotenv()
 
@@ -42,10 +41,6 @@ Format:
 
 AFFECTED_MODULES_PROMPT = """List the key modules or features affected by this PR based on filenames and diff content. Keep it concise with 2-4 bullet points."""
 
-ISSUE_MATCH_PROMPT = """You are an AI assistant that links PRs to existing issues. Given a PR description and a list of open issues, identify the most semantically related ones. \
-Respond ONLY with a comma-separated list of the issue numbers of the most relevant matches (e.g., '123, 456'). \
-If no issues are present or related, respond with 'none'."""
-
 LABEL_SUGGESTION_PROMPT = """You are an AI assistant that suggests GitHub PR labels based on the PR's risk, test coverage, type, and content. Choose from: high-risk, medium-risk, low-risk, needs-tests, feature, bugfix, refactor, documentation, needs-review. Output a comma-separated list of the most relevant labels for this PR. Only include labels that are justified by the PR content."""
 
 
@@ -55,19 +50,16 @@ class PRInput(BaseModel):
     pr_title: str
     pr_body: str
     changed_files: list
-    issues: list
 
 class AnalysisState(BaseModel):
     pr_title: str
     pr_body: str
     changed_files: list
-    issues: list
     summary: str = ""
     risk: str = ""
     suggested_tests: str = ""
     checklist: str = ""
     affected_modules: str = ""
-    matched_issues: str = ""
     labels: str = ""  # Comma-separated label names
 
 class LabelSuggestionOutput(BaseModel):
@@ -122,18 +114,6 @@ def modules_summary_node(state):
     chain = prompt | llm | StrOutputParser()
     return {"affected_modules": chain.invoke({"input": files})}
 
-def issue_matching_node(state):
-    issues_str = "\n".join(state.issues)
-    input_text = f"PR:\n{state.pr_title} {state.pr_body}\n\nOpen Issues:\n{issues_str}"
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", ISSUE_MATCH_PROMPT),
-        ("user", "{input}")
-    ])
-    chain = prompt | llm | StrOutputParser()
-    raw_output = chain.invoke({"input": input_text})
-    # Extract only numbers (issue numbers) from the output
-    issue_numbers = re.findall(r'\d+', raw_output)
-    return {"matched_issues": ", ".join(issue_numbers) if issue_numbers else "none"}
 
 def label_suggestion_node(state):
     # Use the already generated analysis fields to suggest labels
@@ -163,7 +143,6 @@ def build_pr_agent_graph():
     builder.add_node("suggest_tests", suggest_tests_node)
     builder.add_node("generate_checklist", generate_checklist_node)
     builder.add_node("modules_summary", modules_summary_node)
-    builder.add_node("issue_matching", issue_matching_node)
     builder.add_node("label_suggestion", label_suggestion_node)
 
     builder.set_entry_point("summarize_pr")
@@ -171,8 +150,7 @@ def build_pr_agent_graph():
     builder.add_edge("estimate_risk", "suggest_tests")
     builder.add_edge("suggest_tests", "generate_checklist")
     builder.add_edge("generate_checklist", "modules_summary")
-    builder.add_edge("modules_summary", "issue_matching")
-    builder.add_edge("issue_matching", "label_suggestion")
+    builder.add_edge("modules_summary", "label_suggestion")
     builder.add_edge("label_suggestion", END)
 
     return builder.compile()

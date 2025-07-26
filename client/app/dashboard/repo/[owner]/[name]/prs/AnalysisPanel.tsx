@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { Clock, MessageSquare, Tag, CheckCircle, Plus, User, Calendar, Zap, Shield, TestTube, ClipboardList, GitBranch, XCircle, GitPullRequest } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface PR {
   number: number;
@@ -157,17 +158,27 @@ export default function AnalysisPanel({ prs, owner, name }: { prs: PR[]; owner: 
             </div>
             {Object.keys(ciTestResults).length === 0 ? (
               <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-50 text-green-700 text-xs font-medium">
-                <CheckCircle className="h-4 w-4 mr-1" /> All tests passed
+                <CheckCircle className="h-4 w-4 mr-1" /> All workflows passed
               </span>
             ) : (
-              <div className="space-y-1">
-                {Object.entries(ciTestResults).map(([key, result]: any) => (
-                  <div key={key} className="flex items-center text-xs font-medium rounded-full px-2 py-1 bg-red-50 text-red-700">
-                    <XCircle className="h-4 w-4 mr-1" />
-                    <span className="font-semibold">{result.jobName}</span>
-                    <span className="ml-2">{result.status === 'flaky' ? 'Flaky' : 'Failed'}</span>
-                    {result.explanation && (
-                      <span className="ml-2 text-gray-500">({result.explanation})</span>
+              <div className="space-y-4">
+                {Object.entries(ciTestResults).map(([workflowId, result]: any) => (
+                  <div key={workflowId} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center mb-1">
+                      <XCircle className="h-4 w-4 text-red-600 mr-2" />
+                      <span className="font-semibold">Workflow: {workflowId}</span>
+                      {result.updatedAt && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          (Updated: {new Date(result.updatedAt).toLocaleString()})
+                        </span>
+                      )}
+                    </div>
+                    {result.comment ? (
+                      <div className="prose prose-sm text-red-900">
+                        <ReactMarkdown>{result.comment}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <span className="text-red-700">No details available.</span>
                     )}
                   </div>
                 ))}
@@ -220,14 +231,6 @@ export default function AnalysisPanel({ prs, owner, name }: { prs: PR[]; owner: 
               <h3 className="text-lg font-semibold text-gray-900">Affected Modules</h3>
             </div>
             <p className="text-gray-700">{cleanMarkdown(analysis.affected_modules) || 'Affected modules not available'}</p>
-          </div>
-          {/* Matched Issues */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center mb-4">
-              <Tag className="h-5 w-5 text-indigo-600 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-900">Related Issues</h3>
-            </div>
-            <p className="text-gray-700">{cleanMarkdown(analysis.matched_issues) || 'Related issues not available'}</p>
           </div>
         </div>
       )}

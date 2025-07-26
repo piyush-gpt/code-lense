@@ -141,21 +141,10 @@ async function analyzeAndSavePR(
       return;
     }
 
-    // Get open issues using Octokit
-    const issuesResp = await octokit.issues.listForRepo({
-      owner,
-      repo: repoName,
-      state: "open",
-      per_page: 100,
-    });
-
-    const issues = issuesResp.data.map((i: any) => `${i.number}: ${i.title} ${i.body || ""}`);
-    // Send to Python FastAPI PR Agent for analysis
     const analysisResponse = await axios.post("http://localhost:8000/analyze-pr", {
       pr_title: prTitle,
       pr_body: prBody,
       changed_files: changedFiles,
-      issues,
     });
 
     const analysis = analysisResponse.data;
@@ -401,10 +390,7 @@ export function setupPullRequestWebhooks(webhooks: Webhooks) {
         }
       }
 
-      // If PR is merged, update PR cycle time stats in RepoStats
-      // (Removed: no longer tracking PR cycle time)
-
-      // Delete the PR analysis
+  
       await deletePRAnalysis(accountId, owner, repoName, pr.number);
       console.log(`✅ PR analysis deleted for PR #${pr.number} in ${owner}/${repoName}`);
     } catch (error) {

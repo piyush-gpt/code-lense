@@ -109,22 +109,11 @@ router.get('/get-pr-agent', requireAuth, async (req, res) => {
             patch: f.patch ? f.patch.split("\n").slice(0, 100).join("\n") : "(no patch)", // Limit patch lines
         }));
 
-      // 3. Get open issues
-      const issuesResp = await octokit.issues.listForRepo({
-        owner: ownerStr,
-        repo: repoStr,
-        state: "open",
-        per_page: 100,
-      });
-  
-      const issues = issuesResp.data.map(i => `${i.title} ${i.body || ""}`);
-      
-      // 4. Send to Python FastAPI PR Agent
+      // 3. Send to Python FastAPI PR Agent
       const response = await axios.post("http://localhost:8000/analyze-pr", {
         pr_title: pr.data.title,
         pr_body: pr.data.body || "",
         changed_files: changedFiles,
-        issues,
       });
 
       // 5. Save the analysis result
@@ -161,6 +150,7 @@ router.get('/ci-test-results', requireAuth, async (req, res) => {
     }
     const analysis = await PRAnalysis.findOne({ accountId, owner, repo, prNumber: Number(prNumber) });
     if (!analysis || !analysis.ciTestResults) {
+      console.log(`❌ No CI test results found for PR #${prNumber} in ${owner}/${repo}`);
       return res.json({ success: true, ciTestResults: {} });
     }
     // Fetch latest workflow run for this PR
@@ -176,20 +166,30 @@ router.get('/ci-test-results', requireAuth, async (req, res) => {
       status: 'completed'
     });
     const latestRun = workflowRuns.data.workflow_runs[0];
-    if (!latestRun) return res.json({ success: true, ciTestResults: {} });
+    if (!latestRun) {
+      console.log(`❌ No latest workflow run found for PR #${prNumber} in ${owner}/${repo}`);
+      return res.json({ success: true, ciTestResults: {} });
+    }
     const jobsResp = await octokit.actions.listJobsForWorkflowRun({
       owner,
       repo,
       run_id: latestRun.id
     });
     const validKeys = new Set(jobsResp.data.jobs.map(
-      job => `${latestRun.name || latestRun.workflow_id}:${job.name}`
+      job => `${latestRun.workflow_id}:${job.name}`
     ));
-    // Filter ciTestResults
+    // Filter ciTestResults - convert Map to plain object
+    const ciTestResultsObj = analysis.ciTestResults instanceof Map ? Object.fromEntries(analysis.ciTestResults) : analysis.ciTestResults;
+    console.log(`🔄 Valid keys types: ${Array.from(validKeys).map(k => typeof k)}`);
+    console.log(`🔄 CI test results keys types: ${Object.keys(ciTestResultsObj).map(k => typeof k)}`);
+    console.log(`🔄 Valid keys: ${Array.from(validKeys)}`);
+    console.log(`🔄 CI test results: ${JSON.stringify(ciTestResultsObj)}`);
     const filtered = {};
-    for (const [key, value] of analysis.ciTestResults.entries()) {
+    for (const [key, value] of Object.entries(ciTestResultsObj)) {
+      console.log(`🔍 Checking key: "${key}" - exists in validKeys: ${validKeys.has(key)}`);
       if (validKeys.has(key)) filtered[key] = value;
     }
+    console.log(`✅ Found ${Object.keys(filtered).length} CI test results for PR #${prNumber} in ${owner}/${repo}`);
     return res.json({ success: true, ciTestResults: filtered });
   } catch (error) {
     console.error("❌ Failed to fetch CI test results:", error);
