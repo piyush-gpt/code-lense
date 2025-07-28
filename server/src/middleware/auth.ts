@@ -24,7 +24,7 @@ export async function getInstallationOctokit(installation_id: number) {
     },
   });
 
-  return octokit;
+              return octokit;
 }
 
 export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

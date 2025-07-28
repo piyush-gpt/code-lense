@@ -19,6 +19,7 @@ async function getInstallationOctokit(installationId: number) {
   });
   return octokit;
 }
+console.log(config.GITHUB_PRIVATE_KEY);
 
 // Helper to fetch all filepaths in a repo using the GitHub API
 type RepoObj = { full_name: string, name: string, default_branch?: string };
