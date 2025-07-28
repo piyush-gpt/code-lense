@@ -28,10 +28,11 @@ Analyze the PR title, body, and changed files to identify potential refactoring 
 
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
-class RefactorInput(TypedDict):
+class RefactorInput(BaseModel):
     pr_title: str
     pr_body: str
     changed_files: List[dict]
+    final_analysis: Optional[dict] = None
 
 class RefactorSuggestion(BaseModel):
     file_path: str = Field(description="The file path where the refactoring suggestion applies")
@@ -39,7 +40,7 @@ class RefactorSuggestion(BaseModel):
     updated_code: str = Field(description="The updated code snippet showing the refactored version", default="")
 
 class RefactorAnalysis(BaseModel):
-    refactor_suggestions: Optional[List[RefactorSuggestion]] = Field(description="List of refactoring suggestions for the PR", default=[])
+    refactor_suggestions: List[RefactorSuggestion] = Field(description="List of refactoring suggestions for the PR", default=[])
 
 def analyze_refactor_node(state: RefactorInput) -> dict[str, Any]:
     prompt = ChatPromptTemplate.from_messages([
@@ -49,14 +50,14 @@ def analyze_refactor_node(state: RefactorInput) -> dict[str, Any]:
     
     structured_llm = llm.with_structured_output(RefactorAnalysis)
     chain = prompt | structured_llm
-    
     result = chain.invoke({
-        "pr_title": state["pr_title"],
-        "pr_body": state["pr_body"],
-        "changed_files": state["changed_files"]
+        "pr_title": state.pr_title,
+        "pr_body": state.pr_body,
+        "changed_files": state.changed_files
     })
-    
-    return result.model_dump()
+    return {
+        "final_analysis": result.model_dump()
+    }
 
 def build_refactor_agent_graph():
     builder = StateGraph(RefactorInput)

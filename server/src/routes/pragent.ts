@@ -153,6 +153,7 @@ router.get('/ci-test-results', requireAuth, async (req, res) => {
       console.log(`❌ No CI test results found for PR #${prNumber} in ${owner}/${repo}`);
       return res.json({ success: true, ciTestResults: {} });
     }
+    
     // Fetch latest workflow run for this PR
     const octokit = user.octokit;
     const pr = await octokit.pulls.get({ owner, repo, pull_number: Number(prNumber) });
@@ -162,34 +163,24 @@ router.get('/ci-test-results', requireAuth, async (req, res) => {
       repo,
       head_sha: headSha,
       event: 'pull_request',
-      per_page: 1,
+      per_page: 10, // Get more workflow runs to check multiple workflows
       status: 'completed'
     });
-    const latestRun = workflowRuns.data.workflow_runs[0];
-    if (!latestRun) {
-      console.log(`❌ No latest workflow run found for PR #${prNumber} in ${owner}/${repo}`);
-      return res.json({ success: true, ciTestResults: {} });
-    }
-    const jobsResp = await octokit.actions.listJobsForWorkflowRun({
-      owner,
-      repo,
-      run_id: latestRun.id
-    });
-    const validKeys = new Set(jobsResp.data.jobs.map(
-      job => `${latestRun.workflow_id}:${job.name}`
-    ));
-    // Filter ciTestResults - convert Map to plain object
+    
+    // Convert Map to plain object if needed
     const ciTestResultsObj = analysis.ciTestResults instanceof Map ? Object.fromEntries(analysis.ciTestResults) : analysis.ciTestResults;
-    console.log(`🔄 Valid keys types: ${Array.from(validKeys).map(k => typeof k)}`);
-    console.log(`🔄 CI test results keys types: ${Object.keys(ciTestResultsObj).map(k => typeof k)}`);
-    console.log(`🔄 Valid keys: ${Array.from(validKeys)}`);
-    console.log(`🔄 CI test results: ${JSON.stringify(ciTestResultsObj)}`);
+    
+    // Filter ciTestResults to only include workflows that have recent runs
+    const validWorkflowIds = new Set(workflowRuns.data.workflow_runs.map(run => run.workflow_id.toString()));
     const filtered = {};
-    for (const [key, value] of Object.entries(ciTestResultsObj)) {
-      console.log(`🔍 Checking key: "${key}" - exists in validKeys: ${validKeys.has(key)}`);
-      if (validKeys.has(key)) filtered[key] = value;
+    
+    for (const [workflowId, value] of Object.entries(ciTestResultsObj)) {
+      if (validWorkflowIds.has(workflowId)) {
+        filtered[workflowId] = value;
+      }
     }
-    console.log(`✅ Found ${Object.keys(filtered).length} CI test results for PR #${prNumber} in ${owner}/${repo}`);
+    
+    console.log(`✅ Found ${Object.keys(filtered).length} valid CI test results for PR #${prNumber} in ${owner}/${repo}`);
     return res.json({ success: true, ciTestResults: filtered });
   } catch (error) {
     console.error("❌ Failed to fetch CI test results:", error);

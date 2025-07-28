@@ -6,8 +6,6 @@ export async function getRepoStats(octokit: any, owner: string, repo: string) {
       repo,
     });
 
-    // Get commits count (last 30 days)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const commits = await octokit.rest.repos.listCommits({
       owner,
       repo,

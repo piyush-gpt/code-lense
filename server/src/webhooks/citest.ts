@@ -93,16 +93,6 @@ async function classifyLog(logText: string): Promise<ClassifyResponse> {
   }
 }
 
-async function findJobByName(jobList: any[], checkName: string): Promise<JobInfo | null> {
-  // Only allow exact match for safety
-  const job = jobList.find((j) => j.name === checkName);
-  if (job) {
-    console.log(`✅ Found exact job match: ${job.name}`);
-    return { id: job.id, name: job.name };
-  }
-  console.warn(`⚠️ No exact job found for check name: ${checkName}`);
-  return null;
-}
 
 async function createOrUpdateComment(
   octokit: Octokit,
@@ -160,7 +150,7 @@ export function setupCITestWebhooks(webhooks: Webhooks) {
   // Handle complete workflow runs
   webhooks.on("workflow_run.completed", async ({ payload }) => {
     try {
-      console.log("🔍 Processing workflow run:");
+      console.log("🔍 Processing workflow run: -----------------------------------------------------------");
       const workflowRun = payload.workflow_run;
       const { conclusion, head_branch } = workflowRun;
       

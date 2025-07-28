@@ -40,10 +40,6 @@ ${analysis.suggested_tests}
 ${analysis.checklist}
 
 **Affected Modules**: ${analysis.affected_modules}
-
-**Matched Issues**:
-${analysis.matched_issues}
-
 ---
 
 _This comment was generated automatically by DevDashAI PR Agent_ 🚀`;
@@ -170,7 +166,8 @@ async function analyzeAndSavePR(
         filename: f.filename,
         patch: f.patch ? f.patch.split("\n").slice(0, 100).join("\n") : "(no patch)"
       }));
-
+     
+    console.log("changedFiles:", changedFiles);
     // Early exit if both PR body and changed files are missing
     if (!prBody && changedFiles.length === 0) {
       await octokit.issues.createComment({
@@ -192,8 +189,10 @@ async function analyzeAndSavePR(
       console.log(`⏩ Skipping analysis for PR #${prNumber} in ${owner}/${repoName}: content unchanged.`);
       return;
     }
+    console.log("now doing analysis______________________________")
 
     // Run both PR analysis and refactor analysis in parallel
+    console.log("Making requests to agent endpoints...");
     const [analysisResponse, refactorResponse] = await Promise.all([
       axios.post("http://localhost:8000/analyze-pr", {
         pr_title: prTitle,
@@ -205,8 +204,14 @@ async function analyzeAndSavePR(
         pr_body: prBody,
         changed_files: changedFiles,
       })
-    ]);
-
+    ]).catch(error => {
+      console.error("Error calling agent endpoints:", error);
+      throw error;
+    });
+    console.log("after analysis_________________________________")
+    console.log("analysisResponse status:", analysisResponse.status);
+    console.log("refactorResponse status:", refactorResponse.status);
+    console.log("refactorResponse.data:", refactorResponse.data);
     const analysis = analysisResponse.data;
     const refactorAnalysis = refactorResponse.data;
 
@@ -237,7 +242,9 @@ async function analyzeAndSavePR(
     }
 
     // Post refactor suggestions comment if there are any
+    console.log("refactorAnalysis:", refactorAnalysis);
     if (refactorAnalysis.refactor_suggestions && refactorAnalysis.refactor_suggestions.length > 0) {
+      console.log("inside refactorAnalysis");
       let refactorBody = `### 🔧 Refactoring Suggestions\n\n`;
       
       for (const suggestion of refactorAnalysis.refactor_suggestions) {
@@ -457,11 +464,13 @@ export function setupPullRequestWebhooks(webhooks: Webhooks) {
       // Delete the comment if it exists
       if (existingAnalysis?.commentId) {
         try {
+          console.log("deleting comment______________________________")
           await octokit.issues.deleteComment({
             owner,
             repo: repoName,
             comment_id: existingAnalysis.commentId
           });
+          console.log("after deleting comment______________________________")
           console.log(`🗑️ Deleted comment ${existingAnalysis.commentId} for PR #${pr.number}`);
         } catch (error) {
           console.error("❌ Failed to delete comment:", error);
@@ -470,15 +479,34 @@ export function setupPullRequestWebhooks(webhooks: Webhooks) {
       // Delete the CI comment if it exists
       if (existingAnalysis?.cicommentId) {
         try {
+          console.log("deleting cicomment______________________________")
           await octokit.issues.deleteComment({
             owner,
             repo: repoName,
             comment_id: existingAnalysis.cicommentId
           });
+          console.log("after deleting cicomment______________________________")
           await updatePRAnalysisCICommentId(accountId, owner, repoName, pr.number, null);
           console.log(`🗑️ Deleted CI comment ${existingAnalysis.cicommentId} for PR #${pr.number}`);
         } catch (error) {
           console.error("❌ Failed to delete CI comment:", error);
+        }
+      }
+
+      // Delete the refactor comment if it exists
+      if (existingAnalysis?.refactorCommentId) {
+        try {
+          console.log("deleting refactor comment______________________________")
+          await octokit.issues.deleteComment({
+            owner,
+            repo: repoName,
+            comment_id: existingAnalysis.refactorCommentId
+          });
+          console.log("after deleting refactor comment______________________________")
+          await updatePRAnalysisRefactorCommentId(accountId, owner, repoName, pr.number, null);
+          console.log(`🗑️ Deleted refactor comment ${existingAnalysis.refactorCommentId} for PR #${pr.number}`);
+        } catch (error) {
+          console.error("❌ Failed to delete refactor comment:", error);
         }
       }
 

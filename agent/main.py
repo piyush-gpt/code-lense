@@ -5,6 +5,7 @@ from agents.pragent import build_pr_agent_graph, PRInput, AnalysisState
 from agents.citestagent import build_citest_agent_graph, CILogInput, CILogAnalysis
 from agents.codequeryagent import run_agent
 from agents.issueagent import run_issue_agent, IssueInput
+from agents.refactoragent import build_refactor_agent_graph, RefactorInput, RefactorAnalysis
 import time
 from collections import defaultdict
 from typing import Dict, List
@@ -12,6 +13,7 @@ from typing import Dict, List
 app = FastAPI()
 graph = build_pr_agent_graph()
 citest_graph = build_citest_agent_graph()
+refactor_graph = build_refactor_agent_graph()
 
 # Rate limiting storage
 rate_limit_store: Dict[str, List[float]] = defaultdict(list)
@@ -75,6 +77,14 @@ async def analyze_pr(pr: PRInput):
         )
         result = graph.invoke(state)
         return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/analyze-refactor")
+async def analyze_refactor(pr: RefactorInput):
+    try:
+        result = refactor_graph.invoke(pr)
+        return result["final_analysis"]
     except Exception as e:
         return {"error": str(e)}
 

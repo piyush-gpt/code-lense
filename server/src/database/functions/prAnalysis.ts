@@ -134,7 +134,7 @@ export const updatePRAnalysisRefactorCommentId = async (
   owner: string,
   repo: string,
   prNumber: number,
-  refactorCommentId: number
+  refactorCommentId: number | null
 ) => {
   try {
     const analysis = await PRAnalysis.findOneAndUpdate(
@@ -168,9 +168,12 @@ export const updatePRAnalysisRefactorSuggestions = async (
   refactorSuggestions: any[]
 ) => {
   try {
+    // Clear existing refactor suggestions and add new ones
     const refactorSuggestionsMap = new Map();
     for (const suggestion of refactorSuggestions) {
-      refactorSuggestionsMap.set(suggestion.file_path, {
+      // Encode file path to avoid dots in Map keys
+      const encodedKey = suggestion.file_path.replace(/\./g, '_').replace(/\//g, '_');
+      refactorSuggestionsMap.set(encodedKey, {
         file_path: suggestion.file_path,
         suggestion: suggestion.suggestion,
         updated_code: suggestion.updated_code || "",
@@ -186,8 +189,10 @@ export const updatePRAnalysisRefactorSuggestions = async (
         prNumber
       },
       {
-        refactorSuggestions: refactorSuggestionsMap,
-        updatedAt: new Date()
+        $set: {
+          refactorSuggestions: refactorSuggestionsMap,
+          updatedAt: new Date()
+        }
       },
       {
         new: true
