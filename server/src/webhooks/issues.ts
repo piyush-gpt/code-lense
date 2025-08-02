@@ -45,7 +45,7 @@ ${analysis.related_areas}
 
 ---
 
-_This comment was generated automatically by DevDashAI Issue Agent_ 🚀`;
+_This comment was generated automatically by CodeLense Issue Agent_ 🚀`;
 
   try {
     if (existingCommentId) {

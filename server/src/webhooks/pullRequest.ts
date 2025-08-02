@@ -42,7 +42,7 @@ ${analysis.checklist}
 **Affected Modules**: ${analysis.affected_modules}
 ---
 
-_This comment was generated automatically by DevDashAI PR Agent_ 🚀`;
+_This comment was generated automatically by CodeLense PR Agent_ 🚀`;
 
   try {
     if (existingCommentId) {

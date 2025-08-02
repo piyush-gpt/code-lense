@@ -67,7 +67,7 @@ export default async function HomePage() {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  DevDashAI
+                  CodeLense
                 </h1>
               </div>
             </div>
@@ -170,15 +170,6 @@ export default async function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
-            © 2024 DevDashAI. Built with ❤️ for developers.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

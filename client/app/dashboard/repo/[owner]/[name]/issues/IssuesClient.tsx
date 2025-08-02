@@ -50,7 +50,7 @@ export default function IssuesClient({ issues, owner, name, user, error }: {
               </Link>
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  DevDashAI
+                  CodeLense
                 </h1>
               </div>
             </div>

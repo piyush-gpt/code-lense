@@ -55,7 +55,7 @@ const startServer = async () => {
     };
     
     https.createServer(httpsOptions, app).listen(config.PORT, () => {
-      console.log(`🚀 DevDashAI backend running on HTTPS port ${config.PORT}`);
+      console.log(`🚀 CodeLense backend running on HTTPS port ${config.PORT}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
