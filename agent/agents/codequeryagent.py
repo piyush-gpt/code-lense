@@ -155,12 +155,11 @@ def chunk_and_embed(state: CodeQueryState):
         
         while retries < max_retries:
             try:
-                # Test vector search with a sample query
                 test_pipeline = [
                     {
                         "$vectorSearch": {
                             "index": "vector_index",
-                            "queryVector": embeds[0] if embeds else [0.0] * 1536,  # Use first embedding or dummy
+                            "queryVector": embeds[0] if embeds else [0.0] * 1536, 
                             "path": "embedding",
                             "numCandidates": 1,
                             "limit": 1,
