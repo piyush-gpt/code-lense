@@ -243,4 +243,3 @@ JWT_SECRET=your_jwt_secret
 - **VoyageAI** for the code embeddings
 - **MongoDB** for the robust database solution
 - **Next.js** for the excellent React framework
-- **The open-source community** for inspiration and support
