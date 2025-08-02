@@ -60,7 +60,6 @@ CodeLense provides automated AI analysis that:
 ### 🔧 **CI/CD Intelligence**
 - **Test failure analysis** with intelligent explanations
 - **Build log interpretation** and debugging help
-- **Failure pattern recognition** and suggestions
 - **Automated comment generation** for CI failures
 
 ---
